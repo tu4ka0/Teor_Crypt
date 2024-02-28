@@ -2,6 +2,7 @@ import random
 from decimal import Decimal
 import time
 import math
+import numpy as np
 
 def gcd(a:int, b:int):
     while a!=0 and b!=0:
@@ -48,7 +49,7 @@ def check(a, B):
                 a //= B[i]
                 break
         else:
-            return 0, 0
+            return 0,0
     base_copy = base[:]
     for j in range(len(base_copy)):
         base_copy[j] %= 2
@@ -61,8 +62,43 @@ def check_1(a, n):
     else:
         return a
 
+def simplification(matrix):
+    matrix_t = np.transpose(matrix)
+    for j in range(len(matrix_t)):
+        index = np.argmax(matrix_t[j])
+        if matrix_t[j][index] == 0:
+            continue
+        for k in range(len(matrix_t)):
+            if k == j:
+                continue
+            if matrix_t[k][index] == 1:
+                matrix_t[k] = (matrix_t[k] + matrix_t[j])%2
+    matrix_t = np.transpose(matrix_t)
+    return matrix_t
+
 def solution_sle(matrix):
-    pass
+    matrix = simplification(matrix)
+    print(matrix)
+    full_solution = []
+    for i in range(len(matrix)):
+        temp = matrix[i][:]
+        if sum(matrix[i]) == 0:
+            full_solution.append(set([i]))
+        if sum(matrix[i]) >= 1:
+            index = np.where(temp == 1)[0]
+            solution = set()
+            solution.add(i)
+            for k in index:
+                 for j in range(len(matrix)):
+                    if i == j:
+                        continue
+                    if sum(matrix[j]) == 1 and matrix[j][k] == 1:
+                        solution.add(j)
+                        temp = (matrix[j] + temp)%2
+                        if sum(temp)==0:
+                            if solution not in full_solution:
+                                full_solution.append(solution)
+    return full_solution
 
 def test_millera_rabina(n, k=15):
     if n == 2 or n == 3:
@@ -126,26 +162,19 @@ def method_pollard(n):
 def method_brillhart_morrison(n):
     L = math.exp(math.sqrt(math.log(n) * math.log(math.log(n))))
     a = 1 / math.sqrt(2)
-
     B = [-1] + sieve_of_eratosthenes(int(L**a), n)
-
     S, s, s_mod2 = [], [], []
     arr = [[1, 0]]
-
     sqrt_n = n ** 0.5
     alpha = sqrt_n
     a = int(alpha)
-
     v, u, b = 1, a, a
     arr.append([a, check_1(a, n)])
-
     temp = check(check_1(b, n), B)
     S.append(temp[0])
-
     if temp[0] != 0:
         s.append(temp[0])
         s_mod2.append(temp[1])
-
     while len(s) != len(B) + 1:
         v = (n - u ** 2) // v
         alpha = (sqrt_n + u) // v
@@ -153,18 +182,28 @@ def method_brillhart_morrison(n):
         u = a * v - u
         b = (a * arr[-1][0] + arr[-2][0]) % n
         arr.append([b, check_1(b, n)])
-
         temp = check(check_1(b, n), B)
         S.append(temp[0])
-
         if temp[0] != 0:
             s.append(temp[0])
             s_mod2.append(temp[1])
-
-    for i in s_mod2:
-        print(i)
-    #solution_sle(s_mod2)
+    solution = solution_sle(s_mod2)
+    for var in solution:
+        X, Y = 1, 1
+        for i in var:
+            x = arr[(S.index(s[i]))+1][0]
+            X = (X*x)%n
+            y = arr[(S.index(s[i]))+1][1]
+            Y = (Y*(y))
+        Y = Decimal(Y).sqrt()
+        Y = int(Y)%n
+        dif = int(X-Y)
+        d1 = gcd(dif%n, n)
+        d2 = gcd(int(X+Y)%n, n)
+        if d1 != 1 and d2 != 1:
+            return d1, d2
     
+
 def algorithm(n):
     check = test_millera_rabina(n)
     if check:
