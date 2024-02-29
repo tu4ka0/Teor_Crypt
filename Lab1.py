@@ -2,7 +2,6 @@ import random
 from decimal import Decimal
 import math
 import numpy as np
-from itertools import combinations
 from datetime import datetime
 
 def gcd(a:int, b:int):
@@ -76,23 +75,6 @@ def simplification(matrix):
                 matrix_t[k] = (matrix_t[k] + matrix_t[j])%2
     matrix_t = np.transpose(matrix_t)
     return matrix_t
-
-def find_xor_zero_rows(matrix):
-    matrix = simplification(matrix)
-    rows = len(matrix)
-    result = []
-
-    for r in range(1, rows + 1):
-        row_combinations = combinations(range(rows), r)
-
-        for combination in row_combinations:
-            xor_result = matrix[combination[0]]
-            for index in combination[1:]:
-                xor_result = [a ^ b for a, b in zip(xor_result, matrix[index])]
-
-            if all(x == 0 for x in xor_result):
-                result.append(combination)
-    return result    
         
 def solution_sle(matrix):
     matrix = simplification(matrix)
