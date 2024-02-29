@@ -3,6 +3,7 @@ from decimal import Decimal
 import time
 import math
 import numpy as np
+from itertools import combinations
 
 def gcd(a:int, b:int):
     while a!=0 and b!=0:
@@ -37,7 +38,7 @@ def legandre(p ,n):
         return 1
     return 0
 
-def check(a, B):
+def base(a, B):
     base = [0]*len(B)
     if a < 0:
         a *= -1
@@ -76,21 +77,44 @@ def simplification(matrix):
     matrix_t = np.transpose(matrix_t)
     return matrix_t
 
+def find_xor_zero_rows(matrix):
+    matrix = simplification(matrix)
+    rows = len(matrix)
+    result = []
+
+    for r in range(1, rows + 1):
+        row_combinations = combinations(range(rows), r)
+
+        for combination in row_combinations:
+            xor_result = matrix[combination[0]]
+            for index in combination[1:]:
+                xor_result = [a ^ b for a, b in zip(xor_result, matrix[index])]
+
+            if all(x == 0 for x in xor_result):
+                result.append(combination)
+    return result    
+        
 def solution_sle(matrix):
     matrix = simplification(matrix)
-    print(matrix)
+    matrix = np.array(matrix)
     full_solution = []
     for i in range(len(matrix)):
         temp = matrix[i][:]
         if sum(matrix[i]) == 0:
             full_solution.append(set([i]))
-        if sum(matrix[i]) >= 1:
-            index = np.where(temp == 1)[0]
+            continue
+        index = np.where(temp == 1)[0]
+        if sum(matrix[i]) >= 1: 
             solution = set()
             solution.add(i)
-            for k in index:
+            for k in index:       
                  for j in range(len(matrix)):
                     if i == j:
+                        continue
+                    if np.array_equal(matrix[i], matrix[j]):
+                        tmp_set = set([i, j])
+                        if tmp_set not in full_solution:
+                            full_solution.append(tmp_set)
                         continue
                     if sum(matrix[j]) == 1 and matrix[j][k] == 1:
                         solution.add(j)
@@ -98,9 +122,13 @@ def solution_sle(matrix):
                         if sum(temp)==0:
                             if solution not in full_solution:
                                 full_solution.append(solution)
+                        break
     return full_solution
+                                
+            
 
 def test_millera_rabina(n, k=15):
+    n = int(n)
     if n == 2 or n == 3:
         return True
     if n % 2 == 0 or n < 2:
@@ -122,25 +150,23 @@ def test_millera_rabina(n, k=15):
                 break
         else:
             return False
-    answer[n] = 1
     return True
 
 def division(n):
+    check = test_millera_rabina(n)
+    if check:
+        return n
     for i in range(2, 48):
         if n % i == 0:
-            t = time.time() - start
-            if i in answer:
-                answer[i] += 1
-            else:
-                answer[i] = 1
-            n = Decimal(n)
-            print(f'Дільник {i} знайдений методом пробних ділень')
-            print(f'Час знаходження:{t} ')
-            return int(n/i)
+            return i
     else:
         return False
     
 def method_pollard(n):
+    n = int(n)
+    check = test_millera_rabina(n)
+    if check:
+        return n
     x = 5
     y = 5
     while True:
@@ -149,99 +175,102 @@ def method_pollard(n):
         result = gcd((y-x)%n, n)
         if result == 1:
             continue
-        t = time.time() - start
-        if result in answer:
-            answer[result] += 1
-        else:
-            answer[result] = 1
-        n = Decimal(n)
-        #print(f'Дільник {result} знайдений р-методом Полларда')
-        #print(f'Час знаходження:{t} ')
-        return int(n/result)
+        return result
     
 def method_brillhart_morrison(n):
+    n = int(n)
+    check = test_millera_rabina(n)
+    if check:
+        return n
     L = math.exp(math.sqrt(math.log(n) * math.log(math.log(n))))
-    a = 1 / math.sqrt(2)
-    B = [-1] + sieve_of_eratosthenes(int(L**a), n)
-    S, s, s_mod2 = [], [], []
-    arr = [[1, 0]]
-    sqrt_n = n ** 0.5
-    alpha = sqrt_n
-    a = int(alpha)
-    v, u, b = 1, a, a
-    arr.append([a, check_1(a, n)])
-    temp = check(check_1(b, n), B)
-    S.append(temp[0])
-    if temp[0] != 0:
-        s.append(temp[0])
-        s_mod2.append(temp[1])
-    while len(s) != len(B) + 1:
-        v = (n - u ** 2) // v
-        alpha = (sqrt_n + u) // v
+    A = [1 / math.sqrt(2), math.sqrt(3)/2, math.sqrt(2)]
+    for a in A:
+        B = [-1] + sieve_of_eratosthenes(int(L**a), n)
+        S, s, s_mod2 = [], [], []
+        arr = [[1, 0]]
+        sqrt_n = n ** 0.5
+        alpha = sqrt_n
         a = int(alpha)
-        u = a * v - u
-        b = (a * arr[-1][0] + arr[-2][0]) % n
-        arr.append([b, check_1(b, n)])
-        temp = check(check_1(b, n), B)
+        v, u, b = 1, a, a
+        arr.append([a, check_1(a, n)])
+        temp = base(check_1(b, n), B)
         S.append(temp[0])
         if temp[0] != 0:
             s.append(temp[0])
             s_mod2.append(temp[1])
-    solution = solution_sle(s_mod2)
-    for var in solution:
-        X, Y = 1, 1
-        for i in var:
-            x = arr[(S.index(s[i]))+1][0]
-            X = (X*x)%n
-            y = arr[(S.index(s[i]))+1][1]
-            Y = (Y*(y))
-        Y = Decimal(Y).sqrt()
-        Y = int(Y)%n
-        dif = int(X-Y)
-        d1 = gcd(dif%n, n)
-        d2 = gcd(int(X+Y)%n, n)
-        if d1 != 1 and d2 != 1:
-            return d1, d2
+        while len(s) != len(B) + 1:
+            v = (n - u ** 2) // v
+            alpha = (sqrt_n + u) // v
+            a = int(alpha)
+            u = a * v - u
+            b = (a * arr[-1][0] + arr[-2][0]) % n
+            arr.append([b, check_1(b, n)])
+            temp = base(check_1(b, n), B)
+            S.append(temp[0])
+            if temp[0] != 0:
+                s.append(temp[0])
+                s_mod2.append(temp[1])
+        solution = solution_sle(s_mod2)
+        for var in solution:
+            X, Y = 1, 1
+            for i in var:
+                x = arr[(S.index(s[i]))+1][0]
+                X = (X*x)%n
+                y = arr[(S.index(s[i]))+1][1]
+                Y = (Y*(y))
+            Y = Decimal(Y).sqrt()
+            Y = int(Y)%n
+            dif = int(X-Y)
+            d1 = gcd(dif%n, n)
+            d2 = gcd(int(X+Y)%n, n)
+            if d1 != 1 and d2 != 1:         
+                return d1
     
-
 def algorithm(n):
-    check = test_millera_rabina(n)
-    if check:
-        return False
-    temp = division(n)
-    if temp:
-        return temp   
-    temp = method_pollard(n)
-    return temp
-
+    result = {}
+    n = Decimal(n)
+    d = division(n)
+    if d:
+        n = (n/d)
+        if d in result:
+            result[d] += 1
+        else: 
+            result[d] = 1
+    p = method_pollard(n)
+    if p:
+        n = (n/p)
+        if p in result:
+            result[p] += 1
+        else: 
+            result[p] = 1
+    while n > 1:
+        bm = method_brillhart_morrison(n)
+        n = int(n/bm)
+        if bm in result:
+            result[bm] += 1
+        else: 
+            result[bm] = 1
+    return result
 
 def main():
     while True:
         global answer
         answer = {}      
         menu = input("""Оберіть дію, яку ви бажаєте виконати:
-                     1. Порівняння швидкості спрацювання методу Полларда та методу Брiлхарта-Моррiсона 
-                     2. Запустити алгортм пошуку канонічного розкладу
+                     1. Канонічний розклад числа 
+                     2. Поллард vs Брілхарт-Моррісон
                      3. Завершити роботу)\n""").lstrip()
         if menu == '1':
             n = int(input('Введіть число:'))
-            method_pollard(n)
+            print(method_brillhart_morrison(n))
         if menu == '2':
             n = int(input('Введіть число:'))
-            method_brillhart_morrison(n)
+            result = algorithm(n)
+            print(result)
         if menu == '3':
             user_input = int(input('Введіть число:'))
-            n = user_input
-            global start 
-            start = time.time()
-            while True:
-                n = algorithm(n)
-                if not n:
-                    break
-                else:
-                    continue
-            stop = time.time()
-            print(f'Канонічний розклад числа {user_input}: {"*".join(f"{key}^{value}" for key, value in answer.items())}\nЧас роботи:{stop-start}')
+            print(method_pollard(user_input))
+            #print(f'Канонічний розклад числа {user_input}: {"*".join(f"{key}^{value}" for key, value in answer.items())}\nЧас роботи:{stop-start}')
         if menu == '4':
             break
     
