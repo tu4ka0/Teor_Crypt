@@ -133,9 +133,6 @@ def test_millera_rabina(n, k=15):
     return True
 
 def division(n):
-    check = test_millera_rabina(n)
-    if check:
-        return n
     for i in range(2, 48):
         if n % i == 0:
             return i
@@ -144,9 +141,6 @@ def division(n):
     
 def method_pollard(n):
     n = int(n)
-    check = test_millera_rabina(n)
-    if check:
-        return n
     x = 5
     y = 5
     while True:
@@ -159,9 +153,6 @@ def method_pollard(n):
     
 def method_brillhart_morrison(n):
     n = int(n)
-    check = test_millera_rabina(n)
-    if check:
-        return n
     L = math.exp(math.sqrt(math.log(n) * math.log(math.log(n))))
     A = [1 / math.sqrt(2), math.sqrt(3)/2, math.sqrt(2)]
     for a in A:
@@ -209,6 +200,8 @@ def method_brillhart_morrison(n):
 def algorithm(n):
     result = {}
     n = Decimal(n)
+    check = test_millera_rabina(n)
+    if check: return {n:1}
     d = division(n)
     if d:
         print(f'Дільник {d} було знайдено методом пробних ділень')
@@ -218,6 +211,13 @@ def algorithm(n):
             result[d] += 1
         else: 
             result[d] = 1
+    check = test_millera_rabina(n)
+    if check:
+        if n in result:
+            result[n] += 1
+        else: 
+            result[n] = 1
+        return result
     p = method_pollard(n)
     if p:
         print(f'Дільник {p} було знайдено методом Полларда')
@@ -228,6 +228,13 @@ def algorithm(n):
         else: 
             result[p] = 1
     while n > 1:
+        check = test_millera_rabina(n)
+        if check:
+            if n in result:
+                result[n] += 1
+            else: 
+                result[n] = 1
+            return result
         bm = method_brillhart_morrison(n)
         print(f'Дільник {bm} було знайдено методом Брілхарта-Моррісона')
         print(f'Час знаходження {datetime.now().strftime("%H:%M:%S.%f")[:-3]}\n')
@@ -239,30 +246,66 @@ def algorithm(n):
     return result
 
 def main():
-    while True:
-        global answer
-        answer = {}      
+    while True:     
         menu = input("""Оберіть дію, яку ви бажаєте виконати:
                      1. Брілхарт-Моррісон vs Полларда 
                      2. Канонічний розклад числа
-                     3. Завершити роботу)\n""").lstrip()
+                     3. Тест на простоту
+                     4. Метод пробних ділень
+                     5. р-метод Полларда
+                     6. Алгоритм Брілхарта-Моррісона
+                     7. Завершити роботу)\n""").lstrip()
         if menu == '1':
             n = [3009182572376191,1021514194991569,4000852962116741,15196946347083,499664789704823,269322119833303,679321846483919,96267366284849,61333127792637,2485021628404193]
             for i in n:
-                print(f'Число, що факторизується: {i}')
-                start = datetime.now()
-                method_pollard(i)
-                print(f'Час роботи методу Полларда: {datetime.now() - start}')
-                start = datetime.now()
-                method_brillhart_morrison(i)
-                print(f'Час роботи методу Брілхарта-Моррісона: {datetime.now() - start}')               
-        if menu == '2':
+               print(f'Число, що факторизується: {i}')
+               start = datetime.now()
+               method_pollard(i)
+               print(f'Час роботи методу Полларда: {datetime.now() - start}')
+               start = datetime.now()
+               method_brillhart_morrison(i)
+               print(f'Час роботи методу Брілхарта-Моррісона: {datetime.now() - start}')               
+        elif menu == '2':
             n = int(input('Введіть число:'))
             start = datetime.now()
             result = algorithm(n)
             stop = datetime.now()
             print(f"""Початок роботи: {start.strftime("%H:%M:%S.%f")[:-3]}\nЗавершення роботи: {stop.strftime("%H:%M:%S.%f")[:-3]}""")
             print(f'\nКанонічний розклад числа {n}: {"*".join(f"{key}^{value}" for key, value in result.items())}')
+        elif menu == '3':
+            n = int(input('Введіть число:'))
+            check = test_millera_rabina(n)
+            if check:
+                print(f'Число {n} - просте')
+            else:
+                print(f'Число {n} - складене')
+        elif menu == '4':
+            n = int(input('Введіть число:'))
+            check = test_millera_rabina(n)
+            if check:
+                print(f'Число {n} - просте')
+            else:
+                result = division(n)
+                if result:
+                    print(f'Знайдено дільник: {result}')
+                else:
+                    print('Дільника не знайдено')
+        elif menu == '5':
+            n = int(input('Введіть число:'))
+            check = test_millera_rabina(n)
+            if check:
+                print(f'Число {n} - просте')
+            else:
+                result = method_pollard(n)
+                print(f'Знайдено дільник: {result}')
+        elif menu == '6':
+            n = int(input('Введіть число:'))
+            check = test_millera_rabina(n)
+            if check:
+                print(f'Число {n} - просте')
+            else:
+                result = method_brillhart_morrison(n)
+                print(f'Знайдено дільник: {result}')
         else:
             break
     
