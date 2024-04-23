@@ -1,5 +1,7 @@
+from datetime import datetime
 import sympy
 import time
+
 
 def canonical_representation(n):
     factors = sympy.factorint(n)
@@ -43,14 +45,14 @@ def Pohlig_Hellman(alpha, beta, n):
     sle = []
     for key in can_repr:
         sle.append(search_equation(n, key, alpha, beta, can_repr[key], r[key]))
-    print(chinese_remainder_theorem(sle))
+    return chinese_remainder_theorem(sle)
 
 def discrete_logarithm(alpha, beta, n, timeout_minutes=5):
     current_x = 0
     start_time = time.time()
     timeout_seconds = timeout_minutes * 60
     while True:
-        if pow(alpha, current_x, n) == beta:
+        if int(pow(alpha, current_x, n+1)) == beta:
             return current_x
         current_x += 1
         elapsed_time = time.time() - start_time
@@ -58,9 +60,20 @@ def discrete_logarithm(alpha, beta, n, timeout_minutes=5):
             return None
         
 def main():
-    alpha, beta, n = map(int, input().split())
-    discrete_logarithm(alpha, beta, n)
-    Pohlig_Hellman(alpha, beta, n)
+    alpha = int(input("a = "))
+    beta = int(input("b = "))
+    n = int(input("n = "))
+    start = datetime.now()
+    x = discrete_logarithm(alpha, beta, n)
+    stop = datetime.now()
+    print(f"\nAlgorithm running time: {stop-start}")
+    print(f"x = {x}")
+    print("=====================")
+    start = datetime.now()
+    x = Pohlig_Hellman(alpha, beta, n)
+    stop = datetime.now()
+    print(f"Algorithm running time: {stop-start}")
+    print(f"x = {x}")
     
 if __name__ == "__main__":
     main()
